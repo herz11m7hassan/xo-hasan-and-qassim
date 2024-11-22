@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة X-O</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #1a1f36;
+            margin: 0;
+            padding: 0;
+            color: white;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        h1 {
+            color: #f9d423;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px auto;
+            max-width: 500px;
+        }
+
+        .player {
+            text-align: center;
+        }
+
+        .player img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin: 20px auto;
+            width: 315px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #2c3e50;
+            border: 2px solid #ecf0f1;
+            font-size: 36px;
+            font-weight: bold;
+            color: #f9d423;
+            line-height: 100px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .cell:hover {
+            background-color: #34495e;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        button, select {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover, select:hover {
+            background-color: #2ecc71;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>مرحبًا بك في لعبة X-O التفاعلية!</h1>
+        <div class="scoreboard">
+            <div class="player">
+                <img src="https://via.placeholder.com/80x80?text=X" alt="Player X">
+                <p>اللاعب X</p>
+                <p>النقاط: <span id="scoreX">0</span></p>
+            </div>
+            <div class="player">
+                <img src="https://via.placeholder.com/80x80?text=O" alt="Player O">
+                <p>اللاعب O</p>
+                <p>النقاط: <span id="scoreO">0</span></p>
+            </div>
+        </div>
+        <div class="controls">
+            <p>اختر وضع اللعب:</p>
+            <select id="mode">
+                <option value="friend">اللعب مع زميل</option>
+                <option value="ai">اللعب مع الذكاء الاصطناعي</option>
+            </select>
+            <p>اختر مستوى الصعوبة (للذكاء الاصطناعي):</p>
+            <select id="difficulty">
+                <option value="easy">سهل</option>
+                <option value="medium">متوسط</option>
+                <option value="hard">صعب</option>
+            </select>
+        </div>
+        <div class="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button id="reset">إعادة تشغيل</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        const cells = document.querySelectorAll(".cell");
+        const message = document.getElementById("message");
+        const resetButton = document.getElementById("reset");
+        const modeSelector = document.getElementById("mode");
+        const difficultySelector = document.getElementById("difficulty");
+        const scoreXDisplay = document.getElementById("scoreX");
+        const scoreODisplay = document.getElementById("scoreO");
+
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let isGameOver = false;
+        let mode = "friend";
+        let difficulty = "easy"; // الصعوبة الافتراضية
+        let scoreX = 0;
+        let scoreO = 0;
+
+        function checkWinner() {
+            const winCombinations = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let combo of winCombinations) {
+                const [a, b, c] = combo;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+            }
+
+            return board.includes("") ? null : "draw";
+        }
+
+        function aiMove() {
+            const emptyCells = board.map((cell, index) => cell === "" ? index : null).filter(index => index !== null);
+
+            let move;
+            if (difficulty === "easy") {
+                // حركة عشوائية
+                move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            } else if (difficulty === "medium") {
+                // حركة عشوائية مع فرصة لمنع الخسارة
+                move = emptyCells.find(index => canWin("O", index)) || emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            } else if (difficulty === "hard") {
+                // منع الخسارة أو الفوز
+                move = emptyCells.find(index => canWin("O", index)) ||
+                       emptyCells.find(index => canWin("X", index)) ||
+                       emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+
+            board[move] = "O";
+            cells[move].textContent = "O";
+        }
+
+        function canWin(player, index) {
+            const tempBoard = [...board];
+            tempBoard[index] = player;
+            return checkWinner(tempBoard) === player;
+        }
+
+        function handleCellClick(event) {
+            if (isGameOver) return;
+            const index = event.target.getAttribute("data-index");
+
+            if (board[index] === "") {
+                board[index] = currentPlayer;
+                event.target.textContent = currentPlayer;
+
+                const winner = checkWinner();
+                if (winner) {
+                    endGame(winner);
+                    return;
+                }
+
+                if (mode === "ai" && currentPlayer === "X") {
+                    currentPlayer = "O";
+                    aiMove();
+
+                    const winnerAfterAIMove = checkWinner();
+                    if (winnerAfterAIMove) {
+                        endGame(winnerAfterAIMove);
+                        return;
+                    }
+                }
+
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+                message.textContent = `الدور الآن: ${currentPlayer}`;
+            }
+        }
+
+        function endGame(winner) {
+            isGameOver = true;
+            if (winner === "draw") {
+                message.textContent = "تعادل!";
+            } else {
+                message.textContent = `الفائز: ${winner}`;
+                if (winner === "X") {
+                    scoreX++;
+                    scoreXDisplay.textContent = scoreX;
+                } else {
+                    scoreO++;
+                    scoreODisplay.textContent = scoreO;
+                }
+            }
+        }
+
+        function resetGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            cells.forEach(cell => (cell.textContent = ""));
+            message.textContent = `الدور الآن: X`;
+            currentPlayer = "X";
+            isGameOver = false;
+        }
+
+        modeSelector.addEventListener("change", () => {
+            mode = modeSelector.value;
+            resetGame();
+        });
+
+        difficultySelector.addEventListener("change", () => {
+            difficulty = difficultySelector.value;
+            resetGame();
+        });
+
+        cells.forEach(cell => cell.addEventListener("click", handleCellClick));
+        resetButton.addEventListener("click", resetGame);
+    </script>
+</body>
+</html>
